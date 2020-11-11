@@ -6,9 +6,14 @@ import os
 
 class Monitor:
 
-    def __init__(self, PROCESS_SEARCH):
+    def __init__(self, PROCESS_SEARCH = None, UPDATE_TIME = 0.02):
+        
         self.PROCESS_SEARCH = PROCESS_SEARCH
+        self.UPDATE_TIME = UPDATE_TIME
+        self.header_controller = False
+        
         try:
+
             while True:
 
                 self.data = []
@@ -36,24 +41,38 @@ class Monitor:
                 df['Write_Bytes'] = df['Write_Bytes'].apply(self.get_size)
                 df['Read_bytes'] = df['Read_bytes'].apply(self.get_size)
 
-                for i in df.index:
-                    for j in (df.loc[i,'Command']):
-                        if self.PROCESS_SEARCH in j:
-                            df.loc[i,'Command'] = self.PROCESS_SEARCH
-                        else:
-                            df.loc[i,'Command'] = 'nop'
-                        
-                df2 = df[df['Command'] == self.PROCESS_SEARCH]
+                #This case print all list of process, nothing specified
+                if self.PROCESS_SEARCH == None:
+                    os.system("clear")    
+                    time.sleep(self.UPDATE_TIME)
 
-                os.system("clear")    
-                time.sleep(0.02)
+                    print(df)
+                else:
+                    #The command collum is a list, to extract the experiment file name i use this process.
+                    #First a take the index of each item.
+                    for i_iterator in df.index:
+                        #I run the item(list) using the index on Command Collum.
+                        for j_iterator in (df.loc[i_iterator,'Command']):
+                            #If the choiced file name experiment is contained in the list, i overwrite this item with the string name.
+                            if self.PROCESS_SEARCH in j_iterator:
+                                #Here i overwrite.
+                                df.loc[i_iterator,'Command'] = self.PROCESS_SEARCH
+                            else:
+                                #If is not contained i overwrite with thr string 'nop'
+                                df.loc[i_iterator,'Command'] = 'nop'                    
+                    df2 = df[df['Command'] == self.PROCESS_SEARCH]
 
-                print(df2)
-                df2.to_csv ('./out.csv', index = False, header=False, mode='a+')
+                    os.system("clear")    
+                    time.sleep(self.UPDATE_TIME)
+
+                    print(df2)
+                    if self.header_controller == False:
+                        df2.to_csv ('./out.csv', index = True, header=True, mode='a+')
+                        self.header_controller = True
+                    else:
+                        df2.to_csv ('./out.csv', index = True, header=False, mode='a+')
         except:
-            print('Exit program')
-
-
+            print('System exit (CTRL+C)')
     def get_pid(self, process):
         try:
             return process.pid
@@ -123,9 +142,6 @@ class Monitor:
         except psu.AccessDenied:
             return 'Not found'
 
-
-
 if __name__ == "__main__":
     x = Monitor('monitor.py')
-
-    
+    #x = Monitor(None)
